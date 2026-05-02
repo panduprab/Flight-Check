@@ -835,24 +835,15 @@ document.addEventListener('DOMContentLoaded', () => {
   //    use {scope: '/'} — this requires Service-Worker-Allowed header on a real server.
   //    For local/offline use, we register with the current scope instead.
   // ✅ FIXED — register from a real URL
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-  .then(reg => {
-    console.log('[FlightCheck] SW registered, scope:', reg.scope);
-    })
-  .catch(err => {
-    console.warn('[FlightCheck] SW registration failed:', err.message);
-    });
+  if ('serviceWorker' in navigator) {
+  try {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => console.log('[FlightCheck] SW registered:', reg.scope))
+      .catch(err => console.warn('[FlightCheck] SW skipped:', err.message));
+  } catch(e) {
+    console.warn('[FlightCheck] SW not available:', e.message);
   }
-  
-    // Use {scope: './'} so it works without a server header
-    navigator.serviceWorker.register(swUrl, { scope: './' })
-      .then(reg => {
-        console.log('[FlightCheck] SW registered, scope:', reg.scope);
-      })
-      .catch(err => {
-        console.warn('[FlightCheck] SW registration failed (needs HTTPS server):', err.message);
-      });
-  }
+}
 
   // 3. Capture beforeinstallprompt for the install button
   let deferredPrompt = null;
