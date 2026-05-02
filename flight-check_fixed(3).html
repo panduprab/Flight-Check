@@ -836,11 +836,36 @@ document.addEventListener('DOMContentLoaded', () => {
   //    For local/offline use, we register with the current scope instead.
   // ✅ FIXED — register from a real URL
 if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE = 'flight-check-v1';
+      self.addEventListener('install', e => {
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(self.clients.claim());
+      });
+      self.addEventListener('fetch', e => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+          fetch(e.request)
+            .then(res => {
+              const clone = res.clone();
+              caches.open(CACHE).then(c => c.put(e.request, clone));
+              return res;
+            })
+            .catch(() => caches.match(e.request).then(r => r || new Response('Offline', { status: 503 })))
+        );
+      });
+    `;
   navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .then(reg => console.log('[FlightCheck] SW registered, scope:', reg.scope))
-    .catch(err => console.warn('[FlightCheck] SW registration failed:', err.message));
-}
-
+  .then(reg => {
+    console.log('[FlightCheck] SW registered, scope:', reg.scope);
+    })
+  .catch(err => {
+    console.warn('[FlightCheck] SW registration failed:', err.message);
+    });
+  }
+  
     // Use {scope: './'} so it works without a server header
     navigator.serviceWorker.register(swUrl, { scope: './' })
       .then(reg => {
